@@ -1,4 +1,5 @@
 "Тренер угадывания дней недели по заданной дате"
+VERSION = "1.0"
 
 import datetime
 import calendar
@@ -184,7 +185,7 @@ def find_current_session_number(game_type):
 
 def show_info(verbose=False):
     if verbose == False:
-        print("v = 1.0")
+        print(f"V {VERSION}")
         print("Это игра, в которой нужно угадать день недели по году, месяцу и числу")
         print("Сгенерируются 10 дат")
         print("Ответы принимаются в цифровом виде, где:")
