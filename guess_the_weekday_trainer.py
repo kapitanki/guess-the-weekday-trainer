@@ -69,9 +69,11 @@ def pick_a_game():
     show_info(0)
     try:
         pick = int(input("Выберите игру: "))
-    except ValueError as err:
-        pick = 1
-    if pick == 2:
+    except ValueError:
+        pick = 99
+    if pick == 1:
+        return full_game, "Полная игра"
+    elif pick == 2:
         return year_game, "Года"
     elif pick == 3:
         return month_game, "Месяцы и числа"
@@ -81,8 +83,8 @@ def pick_a_game():
     elif pick == 0:
         print("\nВ разработке\n")
         return pick_a_game()
-    else:
-        return full_game, "Полная игра"
+    elif pick == 99:
+        return 99, "Выход"
     
     
 def full_game(dates_and_answers):
@@ -207,6 +209,7 @@ def show_results(dates_and_answers, session_time_seconds, correct_answers,
             print(i[0], i[2], "Правильно")
         else:
             print(i[0], i[2], "Ошибка!")
+    print()
 
 
 def find_current_session_number(game_type):
@@ -253,29 +256,18 @@ def show_info(info_section=0):
               "**28 - 0", "**56 - 0", sep="\n")
         print()
 
-
-def play_again_prompt():
-    print()
-    try:
-        int(input("Введите любую цифру, чтобы сыграть еще раз."))
-    except ValueError:
-        play_again = False
-    else:
-        play_again = True
-    if play_again:
-        main()
-
     
 def main():
+    # Пользователю предлагается выбрать игру
+    game, game_type = pick_a_game()
+    if game == 99:
+        return
     # Задается промежуток для генерации даты
     # Начальная дата - дата введения Григорианского календаря в некоторых странах
-    show_info(1)
     start_date = datetime.date(1918, 3, 1)
     end_date = datetime.date(2099, 1, 1)
     # Генерируются даты и ответы
     dates_and_answers = generate_dates_and_answers(start_date, end_date)
-    # Пользователю предлагается выбрать игру
-    game, game_type = pick_a_game()
     # Список наполняется ответами пользователя 
     dates_and_answers, session_time_seconds = game(dates_and_answers)
     # Проверяются ответы на правильность
@@ -290,7 +282,10 @@ def main():
     # выводятся результаты
     show_results(dates_and_answers, session_time_seconds, correct_answers,
                  session_number, game_type)
-    play_again_prompt()
+    main()
 
+
+
+show_info(1)
 main()
         
