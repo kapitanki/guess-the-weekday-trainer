@@ -33,7 +33,11 @@ import random
 import re
 from pathlib import Path
 
-def generate_dates_and_answers(start_date, end_date, length=10):
+start_date = datetime.date(1918, 3, 1)
+end_date = datetime.date(2099, 1, 1)
+
+
+def generate_dates_and_answers(start_date, end_date, active_weekdays=7, only_year=False, length=10):
     """
 Наполняется главный информационный список
 0. Случайная дата в промежутке между start_date и end_date
@@ -49,18 +53,40 @@ def generate_dates_and_answers(start_date, end_date, length=10):
     days_between_dates = time_between_dates.days
     
     dates_and_answers = []
-    for i in range(length):
-        # Генерируется случайную дату
-        random_number_of_days = random.randrange(days_between_dates+1)
-        random_date = start_date + datetime.timedelta(days=random_number_of_days)
-        
-        # Наполняется список
-        # [Дата, день недели числом, день недели словом, ответ пользователя, правильность ответа]
-        dates_and_answers.append([random_date,
-                                  random_date.isoweekday(),
-                                  random_date.strftime("%A"),
-                                  None,
-                                  None])
+    if only_year:
+        for i in range(length):
+            # Генерируется случайная дата
+            while True:
+                random_number_of_days = random.randrange(days_between_dates+1)
+                random_date = start_date + datetime.timedelta(days=random_number_of_days)
+                if datetime.datetime(random_date.year, 3, 14).isoweekday() > active_weekdays + 1:
+                    continue
+                # Наполняется список
+                # [Дата, день недели числом, день недели словом,
+                # ответ пользователя, правильность ответа]
+                dates_and_answers.append([datetime.datetime(random_date.year, 3, 14),
+                                          datetime.datetime(random_date.year, 3, 14).isoweekday(),
+                                          datetime.datetime(random_date.year, 3, 14).strftime("%A"),
+                                          None,
+                                          None])
+
+                break
+        for line in dates_and_answers:
+            print(line)
+    else:
+        for i in range(length):
+            # Генерируется случайная дата
+            random_number_of_days = random.randrange(days_between_dates+1)
+            random_date = start_date + datetime.timedelta(days=random_number_of_days)
+
+            # Наполняется список
+            # [Дата, день недели числом, день недели словом,
+            # ответ пользователя, правильность ответа]
+            dates_and_answers.append([datetime.datetime(random_date.year, 3, 14),
+                                      datetime.datetime(random_date.year, 3, 14).isoweekday(),
+                                      datetime.datetime(random_date.year, 3, 14).strftime("%A"),
+                                      None,
+                                      None])
     return dates_and_answers
 
 
@@ -74,11 +100,13 @@ def pick_a_game():
     if pick == 1:
         return full_game, "Полная игра"
     elif pick == 2:
-        return year_game, "Года"
+        return year_game, "Тренировка \"Года и столетия\""
     elif pick == 3:
-        return month_game, "Месяцы и числа"
+        return month_game, "Тренировка \"Месяцы и числа\""
+    elif pick == 4:
+        return partial_years_game, "Тренировка \"Года без столетий по части дней недели\""
     elif pick == 9:
-        show_info(True)
+        show_info(2)
         return pick_a_game()
     elif pick == 0:
         print("\nВ разработке\n")
@@ -87,14 +115,15 @@ def pick_a_game():
         return 99, "Выход"
     
     
-def full_game(dates_and_answers):
+def full_game():
     """
 Полная игра
 Пользователю выводится полная дата,
 в ответе пользователь указывает на какой день недели приходится эта дата
     Возвращается кортеж с списком вопросов и ответов, длительность угадывания в секундах
     """
-
+    
+    dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась полная игра")
     start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
@@ -112,7 +141,8 @@ def full_game(dates_and_answers):
     return (dates_and_answers, session_time_seconds)
 
 
-def year_game(dates_and_answers):
+def year_game():
+    dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась тренировка \"Только года(1918-2099)\"")
     start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
@@ -132,7 +162,8 @@ def year_game(dates_and_answers):
     session_time_seconds = (end_time - start_time).seconds
     return (dates_and_answers, session_time_seconds)
 
-def month_game(dates_and_answers):
+def month_game():
+    dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась тренировка \"Только месяцы и числа\"")
     start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
@@ -152,6 +183,33 @@ def month_game(dates_and_answers):
         
     end_time = datetime.datetime.now()
     session_time_seconds = (end_time - start_time).seconds
+    return (dates_and_answers, session_time_seconds)
+
+
+def partial_years_game(active_weekdays=1):
+    """"""
+    print("active_weekdays", active_weekdays)
+    start_date = datetime.date(2100, 1, 1)
+    end_date = datetime.date(2199, 12, 31)
+    dates_and_answers = generate_dates_and_answers(start_date, end_date, active_weekdays, only_year=True)
+    print("Началась тренировка \"Только дни недели 0-2 (без столетий)\"")
+    start_time = datetime.datetime.now()
+    for i in range(len(dates_and_answers)):
+        # Принимаем и обрабатываем ответ пользователя
+        try:
+            year_day_answer = int(input("{} : ".format(
+                dates_and_answers[i][0].strftime("%Y"))))
+        except ValueError as err:
+            year_day_answer = active_weekdays + 1
+        if year_day_answer == 0:
+            year_day_answer = 7
+        dates_and_answers[i][3] = year_day_answer
+        # Вычисляем и записываем правильный ответ
+        correct_answer = datetime.datetime(dates_and_answers[i][0].year, 3, 14).isoweekday()
+        dates_and_answers[i][1] = correct_answer
+    end_time = datetime.datetime.now()
+    session_time_seconds = (end_time - start_time).seconds
+    print(dates_and_answers)
     return (dates_and_answers, session_time_seconds)
 
 
@@ -251,9 +309,9 @@ def show_info(info_section=0):
               "1.3 (1,4 в высокосный год)", "2.28 (2.29 в высокосный год", "3.14", "4.4", "5.9",
               "6.6", "7.11", "8.8", "9.5", "10.10", "11.7", "12.12", sep="\n")
         print()
-        print("Некоторые годы и их базовые значения:", "**0 - 0", "**12 - 1", "**24 - 2",
-              "**36 - 3", "**48 - 4", "**60 - 5", "**72 - 6", "**84 - 0", "**96 - 1",
-              "**28 - 0", "**56 - 0", sep="\n")
+        print("Некоторые годы и их базовые значения:", "0 - 0", "12 - 1", "24 - 2",
+              "36 - 3", "48 - 4", "60 - 5", "72 - 6", "84 - 0", "96 - 1",
+              "28 - 0", "56 - 0", sep="\n")
         print()
 
     
@@ -264,12 +322,10 @@ def main():
         return
     # Задается промежуток для генерации даты
     # Начальная дата - дата введения Григорианского календаря в некоторых странах
-    start_date = datetime.date(1918, 3, 1)
-    end_date = datetime.date(2099, 1, 1)
-    # Генерируются даты и ответы
-    dates_and_answers = generate_dates_and_answers(start_date, end_date)
+
+    
     # Список наполняется ответами пользователя 
-    dates_and_answers, session_time_seconds = game(dates_and_answers)
+    dates_and_answers, session_time_seconds = game()
     # Проверяются ответы на правильность
     dates_and_answers = check_results(dates_and_answers)
     # Вычисляется количество правильных результатов
@@ -283,8 +339,6 @@ def main():
     show_results(dates_and_answers, session_time_seconds, correct_answers,
                  session_number, game_type)
     main()
-
-
 
 show_info(1)
 main()
