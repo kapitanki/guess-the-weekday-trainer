@@ -1,0 +1,57 @@
+Тип игры: Года
+Попытка №1
+Правильных ответов: 0/10
+Среднее время на одну дату: 0 сек
+Время суммарно: 4 сек
+Дата и время: 2022.01.11  14:35
+Временные рамки: 1918-2099 года
+2082-06-21 Sunday False
+2017-09-25 Monday False
+1961-04-15 Saturday False
+2086-11-29 Friday False
+2063-03-02 Friday False
+1996-04-04 Thursday False
+1957-04-12 Friday False
+2090-06-20 Tuesday False
+2092-03-18 Tuesday False
+2048-11-05 Thursday False
+
+
+Тип игры: Месяцы и числа
+Попытка №1
+Правильных ответов: 4/10
+Среднее время на одну дату: 0 сек
+Время суммарно: 2 сек
+Дата и время: 2022.01.11  14:36
+Временные рамки: 1918-2099 года
+1940-06-10 Monday True
+2065-07-03 Friday False
+2092-03-24 Monday True
+2059-02-24 Monday True
+2093-08-18 Tuesday False
+2089-12-05 Monday True
+2066-03-11 Thursday False
+2057-04-25 Wednesday False
+1951-07-10 Tuesday False
+2052-08-22 Thursday False
+
+
+Тип игры: Полная игра
+Попытка №1
+Правильных ответов: 1/10
+Среднее время на одну дату: 0 сек
+Время суммарно: 3 сек
+Дата и время: 2022.01.11  14:36
+Временные рамки: 1918-2099 года
+2080-04-24 Wednesday False
+1968-02-26 Monday True
+2087-03-04 Tuesday False
+1990-11-17 Saturday False
+2037-08-26 Wednesday False
+1997-06-27 Friday False
+1951-02-21 Wednesday False
+2024-11-28 Thursday False
+1985-04-26 Friday False
+2062-12-17 Sunday False
+
+
