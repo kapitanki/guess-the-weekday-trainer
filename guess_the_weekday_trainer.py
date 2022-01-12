@@ -3,9 +3,7 @@
 1. Полная игра
 2. Тренировка \"Только года(1918-2099)\"
 3. Тренировка \"Только месяцы и числа\"
-4. Тренировка \"Только дни недели 0-2 (без столетий)\" # TBI
-5. Тренировка \"Только дни недели 0-4 (без столетий)\" # TBI
-6. Тренировка \"Только дни недели 0-6 (без столетий)\" # TBI
+4. Тренировка \"Только дни недели 1-7 (без столетий)\"
 9. Вспомогательная информация
 10. Статистика
 
@@ -25,7 +23,7 @@ play_again_prompt
 main
 """
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 import datetime
 import calendar
@@ -35,6 +33,19 @@ from pathlib import Path
 
 start_date = datetime.date(1918, 3, 1)
 end_date = datetime.date(2099, 1, 1)
+
+games_types = {
+    1: "Полная игра",
+    2: "Тренировка \"Только года(1918-2099)\"",
+    3: "Тренировка \"Только месяцы и числа\"",
+    4: "Тренировка \"Только дни недели 1-7 (без столетий)\"",
+    5: "",
+    6: "",
+    8: "",
+    9: "Вспомогательная информация",
+    0: "Статистика",
+    99: "Выход",
+}
 
 
 def generate_dates_and_answers(start_date, end_date, active_weekdays=7, only_year=False, length=10):
@@ -51,13 +62,13 @@ def generate_dates_and_answers(start_date, end_date, active_weekdays=7, only_yea
     # Высчитываем длительность промежутка в днях
     time_between_dates = end_date - start_date
     days_between_dates = time_between_dates.days
-    
+
     dates_and_answers = []
     if only_year:
         for i in range(length):
             # Генерируется случайная дата
             while True:
-                random_number_of_days = random.randrange(days_between_dates+1)
+                random_number_of_days = random.randrange(days_between_dates + 1)
                 random_date = start_date + datetime.timedelta(days=random_number_of_days)
                 if datetime.datetime(random_date.year, 3, 14).isoweekday() > active_weekdays + 1:
                     continue
@@ -76,7 +87,7 @@ def generate_dates_and_answers(start_date, end_date, active_weekdays=7, only_yea
     else:
         for i in range(length):
             # Генерируется случайная дата
-            random_number_of_days = random.randrange(days_between_dates+1)
+            random_number_of_days = random.randrange(days_between_dates + 1)
             random_date = start_date + datetime.timedelta(days=random_number_of_days)
 
             # Наполняется список
@@ -97,24 +108,28 @@ def pick_a_game():
         pick = int(input("Выберите игру: "))
     except ValueError:
         pick = 99
+
     if pick == 1:
-        return full_game, "Полная игра"
+        game = full_game
     elif pick == 2:
-        return year_game, "Тренировка \"Года и столетия\""
+        game = year_game
     elif pick == 3:
-        return month_game, "Тренировка \"Месяцы и числа\""
+        game = month_game
     elif pick == 4:
-        return partial_years_game, "Тренировка \"Года без столетий по части дней недели\""
+        game = partial_years_game
     elif pick == 9:
         show_info(2)
-        return pick_a_game()
+        pick_a_game()
     elif pick == 0:
         print("\nВ разработке\n")
         return pick_a_game()
     elif pick == 99:
-        return 99, "Выход"
-    
-    
+        return None, None, None
+    game_type = games_types[pick]
+    dates_and_answers, session_time_seconds = game()
+    return dates_and_answers, session_time_seconds, game_type
+
+
 def full_game():
     """
 Полная игра
@@ -122,7 +137,7 @@ def full_game():
 в ответе пользователь указывает на какой день недели приходится эта дата
     Возвращается кортеж с списком вопросов и ответов, длительность угадывания в секундах
     """
-    
+
     dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась полная игра")
     start_time = datetime.datetime.now()
@@ -138,7 +153,7 @@ def full_game():
         dates_and_answers[i][3] = weekday_number_answer
     end_time = datetime.datetime.now()
     session_time_seconds = (end_time - start_time).seconds
-    return (dates_and_answers, session_time_seconds)
+    return dates_and_answers, session_time_seconds
 
 
 def year_game():
@@ -160,7 +175,8 @@ def year_game():
         dates_and_answers[i][1] = correct_answer
     end_time = datetime.datetime.now()
     session_time_seconds = (end_time - start_time).seconds
-    return (dates_and_answers, session_time_seconds)
+    return dates_and_answers, session_time_seconds
+
 
 def month_game():
     dates_and_answers = generate_dates_and_answers(start_date, end_date)
@@ -180,26 +196,37 @@ def month_game():
         if month_day_answer == 0:
             month_day_answer = 7
         dates_and_answers[i][3] = month_day_answer
-        
+
     end_time = datetime.datetime.now()
     session_time_seconds = (end_time - start_time).seconds
-    return (dates_and_answers, session_time_seconds)
+    return dates_and_answers, session_time_seconds
 
 
 def partial_years_game(active_weekdays=1):
     """"""
-    print("active_weekdays", active_weekdays)
+    try:
+        active_weekdays = int(input("Сколько дней недели включать в тренировку(1-7)? "))
+    except ValueError:
+        active_weekdays = 7
+    if active_weekdays < 1 or active_weekdays > 7:
+        active_weekdays = 7
+
+    print(f"Дней включено в тренировку: {active_weekdays}")
+    print("В целях обучения генерируются также годы, день которых не входит в дни для тренировки.")
+    print("Для них правильным считается любой ответ(включая пустой) кроме дней входящих в дни для тренировки")
+
+    # У начальной и конечной даты особые значения, так как для данной игры нужно генерировать данные иначе
     start_date = datetime.date(2100, 1, 1)
     end_date = datetime.date(2199, 12, 31)
     dates_and_answers = generate_dates_and_answers(start_date, end_date, active_weekdays, only_year=True)
-    print("Началась тренировка \"Только дни недели 0-2 (без столетий)\"")
+
+    print(f"Началась тренировка {games_types[4]}")
     start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
         # Принимаем и обрабатываем ответ пользователя
         try:
-            year_day_answer = int(input("{} : ".format(
-                dates_and_answers[i][0].strftime("%Y"))))
-        except ValueError as err:
+            year_day_answer = int(input("{} : ".format(dates_and_answers[i][0].strftime("%Y"))))
+        except ValueError:
             year_day_answer = active_weekdays + 1
         if year_day_answer == 0:
             year_day_answer = 7
@@ -210,7 +237,7 @@ def partial_years_game(active_weekdays=1):
     end_time = datetime.datetime.now()
     session_time_seconds = (end_time - start_time).seconds
     print(dates_and_answers)
-    return (dates_and_answers, session_time_seconds)
+    return dates_and_answers, session_time_seconds
 
 
 def check_results(answers):
@@ -225,7 +252,7 @@ def check_results(answers):
 def save_to_file(dates_and_answers, session_time_seconds, session_number, correct_answers,
                  game_type, start_date, end_date, mode=None):
     """ Сохраняются данные в файл"""
-    
+
     total_answers = len(dates_and_answers)
     single_attempt_average_time = int(session_time_seconds / len(dates_and_answers))
     time_now = datetime.datetime.now()
@@ -246,12 +273,13 @@ def save_to_file(dates_and_answers, session_time_seconds, session_number, correc
     with open("save_for_guess_weekday_game.txt", mode="a") as file:
         file.write(save_data)
         print("Saved...")
-        
+
+
 def count_correct_answers(dates_and_answers):
     """Вычисляется количество правильных ответов"""
     correct_answers = 0
     for i in dates_and_answers:
-        if i[4] == True:
+        if i[4] is True:
             correct_answers += 1
     return correct_answers
 
@@ -263,7 +291,7 @@ def show_results(dates_and_answers, session_time_seconds, correct_answers,
     print(f"Правильных ответов: {correct_answers}/{len(dates_and_answers)}")
     print()
     for i in dates_and_answers:
-        if i[4] == True:
+        if i[4] is True:
             print(i[0], i[2], "Правильно")
         else:
             print(i[0], i[2], "Ошибка!")
@@ -274,7 +302,7 @@ def find_current_session_number(game_type):
     # Создается файл, если файла нет
     fle = Path("save_for_guess_weekday_game.txt")
     fle.touch(exist_ok=True)
-    
+
     pattern = f"{game_type}"
     with open("save_for_guess_weekday_game.txt", mode="r") as file:
         file_content = file.read()
@@ -285,11 +313,12 @@ def find_current_session_number(game_type):
 def show_info(info_section=0):
     if info_section == 0:
         print("Главное меню")
-        print("1 - Полная игра")
-        print("2 - Тренировка \"Только года(1918-2099)\"")
-        print("3 - Тренировка \"Только месяцы и числа\"")
-        print("9 - Вспомогательная информация")
-        print("0 - Статистика")
+        print(f"1 - {games_types[1]}")
+        print(f"2 - {games_types[2]}")
+        print(f"3 - {games_types[3]}")
+        print(f"4 - {games_types[4]}")
+        print(f"9 - {games_types[9]}")
+        print(f"0 - {games_types[0]}")
     elif info_section == 1:
         print(f"V {VERSION}")
         print("Это игра, в которой нужно угадать день недели по году, месяцу и числу")
@@ -314,18 +343,12 @@ def show_info(info_section=0):
               "28 - 0", "56 - 0", sep="\n")
         print()
 
-    
-def main():
-    # Пользователю предлагается выбрать игру
-    game, game_type = pick_a_game()
-    if game == 99:
-        return
-    # Задается промежуток для генерации даты
-    # Начальная дата - дата введения Григорианского календаря в некоторых странах
 
-    
-    # Список наполняется ответами пользователя 
-    dates_and_answers, session_time_seconds = game()
+def main():
+    dates_and_answers, session_time_seconds, game_type = pick_a_game()
+    if game_type is None:
+        return
+
     # Проверяются ответы на правильность
     dates_and_answers = check_results(dates_and_answers)
     # Вычисляется количество правильных результатов
@@ -340,6 +363,6 @@ def main():
                  session_number, game_type)
     main()
 
+
 show_info(1)
 main()
-        
