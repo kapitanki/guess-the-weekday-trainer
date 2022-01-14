@@ -47,7 +47,15 @@ games_types = {
     99: "Выход",
 }
 
-
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start_time = datetime.datetime.now()
+        dates_and_answers = func(*args, **kwargs)
+        end_time = datetime.datetime.now()
+        session_time_seconds = (end_time - start_time).seconds
+        return dates_and_answers, session_time_seconds
+    return wrapper
+        
 def generate_dates_and_answers(start_date, end_date, active_weekdays=7, only_year=False, length=10):
     """
 Наполняется главный информационный список
@@ -129,7 +137,7 @@ def pick_a_game():
     dates_and_answers, session_time_seconds = game()
     return dates_and_answers, session_time_seconds, game_type
 
-
+@timer
 def full_game():
     """
 Полная игра
@@ -140,7 +148,6 @@ def full_game():
 
     dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась полная игра")
-    start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
         # Обрабатывается ввод пользователя
         try:
@@ -151,15 +158,12 @@ def full_game():
         if weekday_number_answer == 0:
             weekday_number_answer = 7
         dates_and_answers[i][3] = weekday_number_answer
-    end_time = datetime.datetime.now()
-    session_time_seconds = (end_time - start_time).seconds
-    return dates_and_answers, session_time_seconds
+    return dates_and_answers
 
-
+@timer
 def year_game():
     dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась тренировка \"Только года(1918-2099)\"")
-    start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
         # Принимаем и обрабатываем ответ пользователя
         try:
@@ -173,15 +177,12 @@ def year_game():
         # Вычисляем и записываем правильный ответ
         correct_answer = datetime.datetime(dates_and_answers[i][0].year, 3, 14).isoweekday()
         dates_and_answers[i][1] = correct_answer
-    end_time = datetime.datetime.now()
-    session_time_seconds = (end_time - start_time).seconds
-    return dates_and_answers, session_time_seconds
+    return dates_and_answers
 
-
+@timer
 def month_game():
     dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась тренировка \"Только месяцы и числа\"")
-    start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
         if calendar.isleap(dates_and_answers[i][0].year):
             leap_year = "В"
@@ -196,12 +197,9 @@ def month_game():
         if month_day_answer == 0:
             month_day_answer = 7
         dates_and_answers[i][3] = month_day_answer
+    return dates_and_answers
 
-    end_time = datetime.datetime.now()
-    session_time_seconds = (end_time - start_time).seconds
-    return dates_and_answers, session_time_seconds
-
-
+@timer
 def partial_years_game(active_weekdays=1):
     """"""
     try:
@@ -221,7 +219,6 @@ def partial_years_game(active_weekdays=1):
     dates_and_answers = generate_dates_and_answers(start_date, end_date, active_weekdays, only_year=True)
 
     print(f"Началась тренировка {games_types[4]}")
-    start_time = datetime.datetime.now()
     for i in range(len(dates_and_answers)):
         # Принимаем и обрабатываем ответ пользователя
         try:
@@ -234,10 +231,8 @@ def partial_years_game(active_weekdays=1):
         # Вычисляем и записываем правильный ответ
         correct_answer = datetime.datetime(dates_and_answers[i][0].year, 3, 14).isoweekday()
         dates_and_answers[i][1] = correct_answer
-    end_time = datetime.datetime.now()
-    session_time_seconds = (end_time - start_time).seconds
     print(dates_and_answers)
-    return dates_and_answers, session_time_seconds
+    return dates_and_answers
 
 
 def check_results(answers):
