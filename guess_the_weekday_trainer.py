@@ -48,6 +48,10 @@ games_types = {
 }
 
 def timer(func):
+    """Декоратор, замеряет время выполнения функции.
+
+Изменяет возвращаемые данные декорированой функции - добавляет измеренное время как дополнительный элемент кортежа.
+"""
     def wrapper(*args, **kwargs):
         start_time = datetime.datetime.now()
         dates_and_answers = func(*args, **kwargs)
