@@ -90,8 +90,6 @@ def generate_dates_and_answers(start_date, end_date, active_weekdays=7, only_yea
                                           None])
 
                 break
-        for line in dates_and_answers:
-            print(line)
     else:
         for i in range(length):
             # Генерируется случайная дата
@@ -231,7 +229,6 @@ def partial_years_game(active_weekdays=1):
         # Вычисляем и записываем правильный ответ
         correct_answer = datetime.datetime(dates_and_answers[i][0].year, 3, 14).isoweekday()
         dates_and_answers[i][1] = correct_answer
-    print(dates_and_answers)
     return dates_and_answers
 
 
