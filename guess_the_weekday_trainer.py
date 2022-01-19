@@ -241,7 +241,7 @@ def save_to_file(dates_and_answers, session_time_seconds, session_number, correc
 {dates_and_answers_str}
 
 """
-    with open("save_for_guess_weekday_game.txt", mode="a") as file:
+    with open("save_for_guess_weekday_game.txt", mode="a", encoding='utf-8') as file:
         file.write(save_data)
         print("Saved...")
 
@@ -276,7 +276,7 @@ def find_current_session_number(game_type):
     fle.touch(exist_ok=True)
 
     pattern = f"{game_type}"
-    with open("save_for_guess_weekday_game.txt", mode="r") as file:
+    with open("save_for_guess_weekday_game.txt", mode="r", encoding='utf-8') as file:
         file_content = file.read()
     session_number = len(re.findall(pattern, file_content)) + 1
     return session_number
