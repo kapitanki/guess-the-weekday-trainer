@@ -30,6 +30,7 @@ import calendar
 import random
 import re
 from pathlib import Path
+from dataclasses import dataclass, field
 
 start_date = datetime.date(1918, 3, 1)
 end_date = datetime.date(2099, 1, 1)
@@ -47,6 +48,62 @@ games_types = {
     99: "Выход",
 }
 
+class Date_data:
+    def __init__(self, start_time=datetime.datetime(1918,1,1),
+                 end_time=datetime.datetime(2099,12,31),
+                 century=True,
+                 year=True,
+                 month_and_date=True,
+                 weekdays_quantity=7):
+        self.start_time = start_time
+        self.end_time = end_time
+        self.century = century
+        self.year = year
+        self.month_and_date = month_and_date
+        self.weekdays_quantity = weekdays_quantity
+
+        # generating a date
+        days_between_dates = (end_date - start_date).days
+        def generate_date():
+            random_number_of_days = random.randrange(days_between_dates + 1)
+            return start_date + datetime.timedelta(days=random_number_of_days)
+        
+        # condition for generating only full year(century and year)
+        if self.century == True and self.year == True and self.month_and_date == False:
+            self.date = datetime.datetime(generate_date().year, 3, 14)
+        #condition for genereting pure year(without century)
+        elif self.century == False and self.year == True and self.month_and_date == False:
+            # making sure we get a value that satisfies possible weekdays restriction
+            while True:
+                self.date = datetime.datetime(generate_date().year % 100 + 2100, 3, 14)
+                if self.date.isoweekday() <= weekdays_quantity:
+                    break
+        else:
+            self.date = generate_date()
+
+        self.weekday = self.date.isoweekday()
+        self.weekday_str = self.date.strftime("%A")
+        
+        
+        
+    @property
+    def user_answer(self):
+        return self._user_answer
+    @user_answer.setter
+    def user_answer(self, answer):
+        try:
+            self._user_answer = int(answer)
+        except ValueError:
+            self._user_answer = None
+        if answer == 0:
+            self._user_answer = 7
+        if self.weekday == self._user_answer:
+            self.iscorrect = True
+        else:
+            self.iscorrect = False
+        
+    
+# Переделать таймер так, чтобы время игры сохранялось как атрибут функции, а не передавалось, как отдельное значение.
 def timer(func):
     """Декоратор, замеряет время выполнения функции.
 
@@ -56,59 +113,11 @@ def timer(func):
         start_time = datetime.datetime.now()
         dates_and_answers = func(*args, **kwargs)
         end_time = datetime.datetime.now()
-        session_time_seconds = (end_time - start_time).seconds
-        return dates_and_answers, session_time_seconds
+        wrapper.time_seconds = (end_time - start_time).seconds
+        return dates_and_answers    
     return wrapper
         
-def generate_dates_and_answers(start_date, end_date, active_weekdays=7, only_year=False, length=10):
-    """
-Наполняется главный информационный список
-0. Случайная дата в промежутке между start_date и end_date
-1. день недели в цифровом формате, где 1 - понедельник, 7 - воскресенье
-2. день недели в текстовом формате
-3. плейсхолдер для ответа пользователя(в цифровом формате
-4. плейсхолдер, в который будет записана правильность ответа пользователя в boolean
-Возвращает этот список
-"""
 
-    # Высчитываем длительность промежутка в днях
-    time_between_dates = end_date - start_date
-    days_between_dates = time_between_dates.days
-
-    dates_and_answers = []
-    if only_year:
-        for i in range(length):
-            # Генерируется случайная дата
-            while True:
-                random_number_of_days = random.randrange(days_between_dates + 1)
-                random_date = start_date + datetime.timedelta(days=random_number_of_days)
-                if datetime.datetime(random_date.year, 3, 14).isoweekday() > active_weekdays + 1:
-                    continue
-                # Наполняется список
-                # [Дата, день недели числом, день недели словом,
-                # ответ пользователя, правильность ответа]
-                dates_and_answers.append([datetime.datetime(random_date.year, 3, 14),
-                                          datetime.datetime(random_date.year, 3, 14).isoweekday(),
-                                          datetime.datetime(random_date.year, 3, 14).strftime("%A"),
-                                          None,
-                                          None])
-
-                break
-    else:
-        for i in range(length):
-            # Генерируется случайная дата
-            random_number_of_days = random.randrange(days_between_dates + 1)
-            random_date = start_date + datetime.timedelta(days=random_number_of_days)
-
-            # Наполняется список
-            # [Дата, день недели числом, день недели словом,
-            # ответ пользователя, правильность ответа]
-            dates_and_answers.append([datetime.datetime(random_date.year, 3, 14),
-                                      datetime.datetime(random_date.year, 3, 14).isoweekday(),
-                                      datetime.datetime(random_date.year, 3, 14).strftime("%A"),
-                                      None,
-                                      None])
-    return dates_and_answers
 
 
 def pick_a_game():
@@ -136,113 +145,79 @@ def pick_a_game():
     elif pick == 99:
         return None, None, None
     game_type = games_types[pick]
-    dates_and_answers, session_time_seconds = game()
-    return dates_and_answers, session_time_seconds, game_type
+    dates_and_answers = game()
+    return dates_and_answers, game.time_seconds, game_type
 
 @timer
-def full_game():
+def full_game(questions=10):
     """
 Полная игра
 Пользователю выводится полная дата,
 в ответе пользователь указывает на какой день недели приходится эта дата
     Возвращается кортеж с списком вопросов и ответов, длительность угадывания в секундах
     """
-
-    dates_and_answers = generate_dates_and_answers(start_date, end_date)
     print("\nНачалась полная игра")
-    for i in range(len(dates_and_answers)):
-        # Обрабатывается ввод пользователя
-        try:
-            weekday_number_answer = int(input("{} : ".format(
-                dates_and_answers[i][0].strftime("%Y.%m.%d"))))
-        except ValueError:
-            weekday_number_answer = 9
-        if weekday_number_answer == 0:
-            weekday_number_answer = 7
-        dates_and_answers[i][3] = weekday_number_answer
+    dates_and_answers = []
+    for i in range(questions):
+        question = Date_data()
+        question.user_answer = input("{}: ".format(question.date.strftime("%Y.%m.%d")))
+        dates_and_answers.append(question)
     return dates_and_answers
 
+
 @timer
-def year_game():
-    dates_and_answers = generate_dates_and_answers(start_date, end_date)
+def year_game(questions=10):
     print("\nНачалась тренировка \"Только года(1918-2099)\"")
-    for i in range(len(dates_and_answers)):
-        # Принимаем и обрабатываем ответ пользователя
-        try:
-            year_day_answer = int(input("{} : ".format(
-                dates_and_answers[i][0].strftime("%Y"))))
-        except ValueError as err:
-            year_day_answer = 9
-        if year_day_answer == 0:
-            year_day_answer = 7
-        dates_and_answers[i][3] = year_day_answer
-        # Вычисляем и записываем правильный ответ
-        correct_answer = datetime.datetime(dates_and_answers[i][0].year, 3, 14).isoweekday()
-        dates_and_answers[i][1] = correct_answer
+    dates_and_answers = []
+    for i in range(questions):
+        question = Date_data(month_and_date=False)
+        question.user_answer = input("{}: ".format(question.date.strftime("%Y")))
+        dates_and_answers.append(question)
     return dates_and_answers
 
+
 @timer
-def month_game():
-    dates_and_answers = generate_dates_and_answers(start_date, end_date)
+def month_game(questions=10):
     print("\nНачалась тренировка \"Только месяцы и числа\"")
-    for i in range(len(dates_and_answers)):
-        if calendar.isleap(dates_and_answers[i][0].year):
-            leap_year = "В"
+    dates_and_answers = []
+    for i in range(questions):
+        question = Date_data()
+        if calendar.isleap(question.date.year):
+            leap_year = "B"
         else:
             leap_year = ""
-        year_code = datetime.datetime(dates_and_answers[i][0].year, 3, 14).isoweekday()
-        try:
-            month_day_answer = int(input("MM.ДД: {}, код года {}, {}: ".format(
-                dates_and_answers[i][0].strftime("%m.%d"), year_code, leap_year)))
-        except ValueError:
-            month_day_answer = 9
-        if month_day_answer == 0:
-            month_day_answer = 7
-        dates_and_answers[i][3] = month_day_answer
+        year_code = datetime.datetime(question.date.year, 3, 14).isoweekday()
+        if year_code == 7:
+            year_code = 0
+        question.user_answer = input("MM.ДД: {}, код года {}, {}: ".format(
+            question.date.strftime("%m.%d"), year_code, leap_year))
+        dates_and_answers.append(question)
     return dates_and_answers
+        
 
 @timer
-def partial_years_game(active_weekdays=1):
+def partial_years_game(questions=10):
     """"""
+    print(f"Началась тренировка {games_types[4]}")
     try:
-        active_weekdays = int(input("Сколько дней недели включать в тренировку(1-7)? "))
+        weekdays_quantity = int(input("Сколько дней недели включать в тренировку(1-7)? "))
     except ValueError:
-        active_weekdays = 7
-    if active_weekdays < 1 or active_weekdays > 7:
-        active_weekdays = 7
+        weekdays_quantity = 7
+    if weekdays_quantity < 1 or weekdays_quantity > 7:
+        weekdays_quantity = 7
 
-    print(f"Дней включено в тренировку: {active_weekdays}")
+    print(f"Дней включено в тренировку: {weekdays_quantity}")
     print("В целях обучения генерируются также годы, день которых не входит в дни для тренировки.")
     print("Для них правильным считается любой ответ(включая пустой) кроме дней входящих в дни для тренировки")
 
-    # У начальной и конечной даты особые значения, так как для данной игры нужно генерировать данные иначе
-    start_date = datetime.date(2100, 1, 1)
-    end_date = datetime.date(2199, 12, 31)
-    dates_and_answers = generate_dates_and_answers(start_date, end_date, active_weekdays, only_year=True)
-
-    print(f"Началась тренировка {games_types[4]}")
-    for i in range(len(dates_and_answers)):
-        # Принимаем и обрабатываем ответ пользователя
-        try:
-            year_day_answer = int(input("{} : ".format(dates_and_answers[i][0].strftime("%Y"))))
-        except ValueError:
-            year_day_answer = active_weekdays + 1
-        if year_day_answer == 0:
-            year_day_answer = 7
-        dates_and_answers[i][3] = year_day_answer
-        # Вычисляем и записываем правильный ответ
-        correct_answer = datetime.datetime(dates_and_answers[i][0].year, 3, 14).isoweekday()
-        dates_and_answers[i][1] = correct_answer
+    dates_and_answers = []
+    for i in range(questions):
+        question = Date_data(century=False, month_and_date=False, weekdays_quantity=weekdays_quantity+1)
+        question.user_answer = input("{} : ".format(question.date.strftime("%Y")))
+        if question.user_answer is None:
+            question.user_answer = weekdays_quantity + 1
+        dates_and_answers.append(question)
     return dates_and_answers
-
-
-def check_results(answers):
-    for i in answers:
-        if i[1] == i[3]:
-            i[4] = True
-        else:
-            i[4] = False
-    return answers
 
 
 def save_to_file(dates_and_answers, session_time_seconds, session_number, correct_answers,
@@ -254,7 +229,7 @@ def save_to_file(dates_and_answers, session_time_seconds, session_number, correc
     time_now = datetime.datetime.now()
     dates_and_answers_str = ''
     for i in dates_and_answers:
-        dates_and_answers_str += str(i[0]) + " " + str(i[2]) + " " + str(i[4]) + "\n"
+        dates_and_answers_str += str(i.date) + " " + str(i.weekday_str) + " " + str(i.iscorrect) + "\n"
 
     save_data = f"""Тип игры: {game_type}
 Попытка №{session_number}
@@ -275,7 +250,7 @@ def count_correct_answers(dates_and_answers):
     """Вычисляется количество правильных ответов"""
     correct_answers = 0
     for i in dates_and_answers:
-        if i[4] is True:
+        if i.iscorrect:
             correct_answers += 1
     return correct_answers
 
@@ -287,10 +262,11 @@ def show_results(dates_and_answers, session_time_seconds, correct_answers,
     print(f"Правильных ответов: {correct_answers}/{len(dates_and_answers)}")
     print()
     for i in dates_and_answers:
-        if i[4] is True:
-            print(i[0], i[2], "Правильно")
+        print(i.date, i.weekday_str, end=" ")
+        if i.iscorrect:
+            print("Правильно")
         else:
-            print(i[0], i[2], "Ошибка!")
+            print("Ошибка!")
     print()
 
 
@@ -345,8 +321,6 @@ def main():
     if game_type is None:
         return
 
-    # Проверяются ответы на правильность
-    dates_and_answers = check_results(dates_and_answers)
     # Вычисляется количество правильных результатов
     correct_answers = count_correct_answers(dates_and_answers)
     # Находится номер сессии
