@@ -103,17 +103,15 @@ class Date_data:
             self.iscorrect = False
         
     
-# Переделать таймер так, чтобы время игры сохранялось как атрибут функции, а не передавалось, как отдельное значение.
-def timer(func):
-    """Декоратор, замеряет время выполнения функции.
 
-Изменяет возвращаемые данные декорированой функции - добавляет измеренное время как дополнительный элемент кортежа.
-"""
+def timer(func):
+    """Декоратор, замеряет время выполнения функции."""
     def wrapper(*args, **kwargs):
         start_time = datetime.datetime.now()
         dates_and_answers = func(*args, **kwargs)
         end_time = datetime.datetime.now()
-        wrapper.time_seconds = (end_time - start_time).seconds
+        wrapper.time_milliseconds = ((end_time - start_time)
+                                     / datetime.timedelta(milliseconds=1))
         return dates_and_answers    
     return wrapper
         
@@ -146,7 +144,8 @@ def pick_a_game():
         return None, None, None
     game_type = games_types[pick]
     dates_and_answers = game()
-    return dates_and_answers, game.time_seconds, game_type
+    print(dates_and_answers, game.time_milliseconds, game_type)
+    return dates_and_answers, game.time_milliseconds, game_type
 
 @timer
 def full_game(questions=10):
@@ -156,7 +155,7 @@ def full_game(questions=10):
 в ответе пользователь указывает на какой день недели приходится эта дата
     Возвращается кортеж с списком вопросов и ответов, длительность угадывания в секундах
     """
-    print("\nНачалась полная игра")
+    print(f"\nНачалась {games_types[1]}")
     dates_and_answers = []
     for i in range(questions):
         question = Date_data()
@@ -167,7 +166,7 @@ def full_game(questions=10):
 
 @timer
 def year_game(questions=10):
-    print("\nНачалась тренировка \"Только года(1918-2099)\"")
+    print(f"\nНачалась \"{games_types[2]}\"")
     dates_and_answers = []
     for i in range(questions):
         question = Date_data(month_and_date=False)
@@ -178,7 +177,8 @@ def year_game(questions=10):
 
 @timer
 def month_game(questions=10):
-    print("\nНачалась тренировка \"Только месяцы и числа\"")
+    print(games_types[3])
+    print(f"\nНачалась \"{games_types[3]}\"")
     dates_and_answers = []
     for i in range(questions):
         question = Date_data()
@@ -197,7 +197,6 @@ def month_game(questions=10):
 
 @timer
 def partial_years_game(questions=10):
-    """"""
     print(f"Началась тренировка {games_types[4]}")
     try:
         weekdays_quantity = int(input("Сколько дней недели включать в тренировку(1-7)? "))
@@ -214,18 +213,18 @@ def partial_years_game(questions=10):
     for i in range(questions):
         question = Date_data(century=False, month_and_date=False, weekdays_quantity=weekdays_quantity+1)
         question.user_answer = input("{} : ".format(question.date.strftime("%Y")))
-        if question.user_answer is None:
+        if question.user_answer is None or question.user_answer > weekdays_quantity:
             question.user_answer = weekdays_quantity + 1
         dates_and_answers.append(question)
     return dates_and_answers
 
 
-def save_to_file(dates_and_answers, session_time_seconds, session_number, correct_answers,
+def save_to_file(dates_and_answers, session_time_milliseconds, session_number, correct_answers,
                  game_type, start_date, end_date, mode=None):
     """ Сохраняются данные в файл"""
 
     total_answers = len(dates_and_answers)
-    single_attempt_average_time = int(session_time_seconds / len(dates_and_answers))
+    single_attempt_average_time = session_time_milliseconds / len(dates_and_answers)
     time_now = datetime.datetime.now()
     dates_and_answers_str = ''
     for i in dates_and_answers:
@@ -234,8 +233,8 @@ def save_to_file(dates_and_answers, session_time_seconds, session_number, correc
     save_data = f"""Тип игры: {game_type}
 Попытка №{session_number}
 Правильных ответов: {correct_answers}/{total_answers}
-Среднее время на одну дату: {single_attempt_average_time} сек
-Время суммарно: {session_time_seconds} сек
+Среднее время на одну дату: {single_attempt_average_time / 1000:.2f} сек
+Время суммарно: {session_time_milliseconds} сек
 Дата и время: {time_now:%Y.%m.%d  %H:%M}
 Временные рамки: {start_date:%Y}-{end_date:%Y} года
 {dates_and_answers_str}
@@ -255,10 +254,10 @@ def count_correct_answers(dates_and_answers):
     return correct_answers
 
 
-def show_results(dates_and_answers, session_time_seconds, correct_answers,
+def show_results(dates_and_answers, session_time_milliseconds, correct_answers,
                  session_number, game_type):
     print(f"\nСессия {session_number} по типу игры \"{game_type}\"")
-    print("Среднее время на попытку = ", session_time_seconds / len(dates_and_answers))
+    print("Среднее время на попытку = ", session_time_milliseconds / len(dates_and_answers))
     print(f"Правильных ответов: {correct_answers}/{len(dates_and_answers)}")
     print()
     for i in dates_and_answers:
@@ -275,7 +274,7 @@ def find_current_session_number(game_type):
     fle = Path("save_for_guess_weekday_game.txt")
     fle.touch(exist_ok=True)
 
-    pattern = f"{game_type}"
+    pattern = re.escape(f"{game_type}")
     with open("save_for_guess_weekday_game.txt", mode="r", encoding='utf-8') as file:
         file_content = file.read()
     session_number = len(re.findall(pattern, file_content)) + 1
@@ -317,7 +316,7 @@ def show_info(info_section=0):
 
 
 def main():
-    dates_and_answers, session_time_seconds, game_type = pick_a_game()
+    dates_and_answers, session_time_milliseconds, game_type = pick_a_game()
     if game_type is None:
         return
 
@@ -326,10 +325,10 @@ def main():
     # Находится номер сессии
     session_number = find_current_session_number(game_type)
     # Сохраняются данные
-    save_to_file(dates_and_answers, session_time_seconds, session_number, correct_answers,
+    save_to_file(dates_and_answers, session_time_milliseconds, session_number, correct_answers,
                  game_type, start_date, end_date, mode=None)
     # выводятся результаты
-    show_results(dates_and_answers, session_time_seconds, correct_answers,
+    show_results(dates_and_answers, session_time_milliseconds, correct_answers,
                  session_number, game_type)
     main()
 
