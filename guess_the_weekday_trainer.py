@@ -1,29 +1,5 @@
-"""Тренер угадывания дней недели по заданной дате
-Текущие режимы:
-1. Полная игра
-2. Тренировка \"Только года(1918-2099)\"
-3. Тренировка \"Только месяцы и числа\"
-4. Тренировка \"Только дни недели 1-7 (без столетий)\"
-9. Вспомогательная информация
-10. Статистика
-
-Список функций:
-generate_dates_and_answers
-full_game
-check_results
-save_to_file
-count_correct_answers
-pick_a_game
-year_game
-month_game
-show_results
-find_current_session_number
-show_info
-play_again_prompt
-main
-"""
-
-VERSION = "1.1"
+"""Тренер угадывания дней недели по сгенерированной дате"""
+VERSION = "1.2"
 
 import datetime
 import calendar
@@ -33,7 +9,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 
 start_date = datetime.date(1918, 3, 1)
-end_date = datetime.date(2099, 1, 1)
+end_date = datetime.date(2099, 12, 31)
 
 games_types = {
     1: "Полная игра",
@@ -49,7 +25,7 @@ games_types = {
 }
 
 class Date_data:
-    def __init__(self, start_time=datetime.datetime(1918,1,1),
+    def __init__(self, start_time=datetime.datetime(1918,3,1),
                  end_time=datetime.datetime(2099,12,31),
                  century=True,
                  year=True,
@@ -62,15 +38,16 @@ class Date_data:
         self.month_and_date = month_and_date
         self.weekdays_quantity = weekdays_quantity
 
-        # generating a date
         days_between_dates = (end_date - start_date).days
         def generate_date():
+            "Generate a date"
             random_number_of_days = random.randrange(days_between_dates + 1)
             return start_date + datetime.timedelta(days=random_number_of_days)
         
         # condition for generating only full year(century and year)
         if self.century == True and self.year == True and self.month_and_date == False:
             self.date = datetime.datetime(generate_date().year, 3, 14)
+            
         #condition for genereting pure year(without century)
         elif self.century == False and self.year == True and self.month_and_date == False:
             # making sure we get a value that satisfies possible weekdays restriction
@@ -83,7 +60,6 @@ class Date_data:
 
         self.weekday = self.date.isoweekday()
         self.weekday_str = self.date.strftime("%A")
-        
         
         
     @property
@@ -103,7 +79,6 @@ class Date_data:
             self.iscorrect = False
         
     
-
 def timer(func):
     """Декоратор, замеряет время выполнения функции."""
     def wrapper(*args, **kwargs):
@@ -113,9 +88,7 @@ def timer(func):
         wrapper.time_milliseconds = ((end_time - start_time)
                                      / datetime.timedelta(milliseconds=1))
         return dates_and_answers    
-    return wrapper
-        
-
+    return wrapper    
 
 
 def pick_a_game():
@@ -319,19 +292,13 @@ def main():
     dates_and_answers, session_time_milliseconds, game_type = pick_a_game()
     if game_type is None:
         return
-
-    # Вычисляется количество правильных результатов
     correct_answers = count_correct_answers(dates_and_answers)
-    # Находится номер сессии
     session_number = find_current_session_number(game_type)
-    # Сохраняются данные
     save_to_file(dates_and_answers, session_time_milliseconds, session_number, correct_answers,
                  game_type, start_date, end_date, mode=None)
-    # выводятся результаты
     show_results(dates_and_answers, session_time_milliseconds, correct_answers,
                  session_number, game_type)
     main()
-
 
 show_info(1)
 main()
