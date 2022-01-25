@@ -145,6 +145,7 @@ def pick_a_game():
         game = partial_years_game
     elif pick == 9:
         show_info(2)
+        show_info(3)
         return pick_a_game()
     elif pick == 0:
         print("\nВ разработке\n")
@@ -274,17 +275,16 @@ def show_info(info_section=0):
         print(f"4 - {games_types[4]}")
         print(f"9 - {games_types[9]}")
         print(f"0 - {games_types[0]}")
+        print()
     elif info_section == 1:
         print(f"V {VERSION}")
         print("Это игра, в которой нужно угадать день недели по году, месяцу и числу. Сгенерируются 10 дат.")
-        print("Сгенерируются 10 дат")
         print("Ответы принимаются в цифровом виде, где:")
         print("1 - понедельник", "2 - вторник", "3 - среда", "4 - четверг", "5 - пятница",
               "6 - суббота", "7(0) - воскресенье", sep="\n")
-        print("Статистика автоматически сохраняется в файл \"save_for_date_game.txt\"")
+        print("Статистика автоматически сохраняется в файл \"save_for_guess_weekday_game.txt\"")
         print()
     elif info_section == 2:
-        print()
         print("Базовое значение по столетиям:", "1900 - среда", "2000 - вторник",
               "2100 - воскресенье", "2200 - пятница", "Этот паттерн повторяется циклично.",
               sep="\n")
@@ -297,9 +297,20 @@ def show_info(info_section=0):
               "36 - 3", "48 - 4", "60 - 5", "72 - 6", "84 - 0", "96 - 1",
               "28 - 0", "56 - 0", sep="\n")
         print()
+
     elif info_section == 3:
+        print("Все годы и их базовые значения")
+        weekday = []
+        for j in range(1, 8):
+            weekday.append(j)
+            weekday.append(" : ")
+            for i in range(100):
+                if (datetime.datetime(2100 + i, 3, 14).isoweekday()) == j:
+                    weekday.append(str(i).zfill(2))
+            print(weekday)
+            weekday.clear()
         print()
-        print()
+
 
 
 def main():
