@@ -5,11 +5,11 @@ import calendar
 import random
 import re
 from pathlib import Path
+from functools import cached_property
 
 
 VERSION = "1.2"
-start_date = datetime.date(1918, 3, 1)
-end_date = datetime.date(2099, 12, 31)
+
 games_types = {
     1: "Полная игра",
     2: "Тренировка \"Только года(1918-2099)\"",
@@ -25,14 +25,14 @@ games_types = {
 
 
 class DateData:
-    def __init__(self, start_time=datetime.datetime(1918, 3, 1),
-                 end_time=datetime.datetime(2099, 12, 31),
+    def __init__(self, start_date=datetime.date(1918, 3, 1),
+                 end_date=datetime.date(2099, 12, 31),
                  generate_century=True,
                  generate_year=True,
                  generate_month_and_date=True,
                  weekdays_quantity=7):
-        self.start_time = start_time
-        self.end_time = end_time
+        self.start_date = start_date
+        self.end_date = end_date
         self.generate_century = generate_century
         self.generate_year = generate_year
         self.generate_month_and_date = generate_month_and_date
@@ -49,13 +49,13 @@ class DateData:
 
         # condition for generating only full year(century and year)
         if self.generate_century == True and self.generate_year == True and self.generate_month_and_date == False:
-            self.date = datetime.datetime(generate_date().year, 3, 14)
+            self.date = datetime.date(generate_date().year, 3, 14)
 
         # condition for genereting pure year(without century)
         elif self.generate_century == False and self.generate_year == True and self.generate_month_and_date == False:
             # making sure we get a value that satisfies possible weekdays restriction
             while True:
-                self.date = datetime.datetime(generate_date().year % 100 + 2100, 3, 14)
+                self.date = datetime.date(generate_date().year % 100 + 2100, 3, 14)
                 if self.date.isoweekday() <= weekdays_quantity:
                     break
         else:
@@ -69,18 +69,48 @@ class DateData:
         return self._user_answer
 
     @user_answer.setter
-    def user_answer(self, answer):
+    def user_answer(self, value):
         try:
-            self._user_answer = int(answer)
+            self._user_answer = int(value)
         except ValueError:
             self._user_answer = None
-        if answer == 0:
+        if value == 0:
             self._user_answer = 7
         if self.weekday == self._user_answer:
             self.is_correct = True
         else:
             self.is_correct = False
 
+
+class SessionData:
+    def __init__(self, dates, game_type, time_milliseconds):
+        self.dates = dates
+        self.start_date = dates[0].start_date
+        self.end_date = dates[0].end_date
+        self.total_answers = len(dates)
+        self.time_milliseconds = time_milliseconds
+        self.game_type = game_type
+        self.single_attempt_average_time = self.time_milliseconds / self.total_answers
+
+    @cached_property
+    def session_number(self):
+        # Создается файл, если файла нет
+        fle = Path("save_for_guess_weekday_game.txt")
+        fle.touch(exist_ok=True)
+
+        pattern = re.escape(f"{self.game_type}")
+        with open("save_for_guess_weekday_game.txt", mode="r", encoding='utf-8') as file:
+            file_content = file.read()
+        return len(re.findall(pattern, file_content)) + 1
+
+    @cached_property
+    def correct_answers(self):
+        """Вычисляется количество правильных ответов"""
+        correct_answers = 0
+        for i in self.dates:
+            if i.is_correct:
+                correct_answers += 1
+        return correct_answers
 
 def timer(func):
     """Декоратор, замеряет время выполнения функции."""
@@ -114,15 +144,15 @@ def pick_a_game():
         game = partial_years_game
     elif pick == 9:
         show_info(2)
-        pick_a_game()
+        return pick_a_game()
     elif pick == 0:
         print("\nВ разработке\n")
         return pick_a_game()
     elif pick == 99:
-        return None, None, None
-    game_type = games_types[pick]
-    dates_and_answers = game()
-    return dates_and_answers, game.time_milliseconds, game_type
+        return None
+
+    session = SessionData(game(), games_types[pick], game.time_milliseconds)
+    return session
 
 
 @timer
@@ -164,7 +194,7 @@ def month_game(questions=10):
             leap_year = "B"
         else:
             leap_year = ""
-        year_code = datetime.datetime(question.date.year, 3, 14).isoweekday()
+        year_code = datetime.date(question.date.year, 3, 14).isoweekday()
         if year_code == 7:
             year_code = 0
         question.user_answer = input("MM.ДД: {}, код года {}, {}: ".format(
@@ -197,48 +227,12 @@ def partial_years_game(questions=10):
     return dates_and_answers
 
 
-def save_to_file(dates_and_answers, session_time_milliseconds, session_number, correct_answers,
-                 game_type, start_date, end_date, mode=None):
-    """ Сохраняются данные в файл"""
-
-    total_answers = len(dates_and_answers)
-    single_attempt_average_time = session_time_milliseconds / len(dates_and_answers)
-    time_now = datetime.datetime.now()
-    dates_and_answers_str = ''
-    for i in dates_and_answers:
-        dates_and_answers_str += str(i.date) + " " + str(i.weekday_str) + " " + str(i.is_correct) + "\n"
-
-    save_data = f"""Тип игры: {game_type}
-Попытка №{session_number}
-Правильных ответов: {correct_answers}/{total_answers}
-Среднее время на одну дату: {single_attempt_average_time / 1000:.2f} сек
-Время суммарно: {session_time_milliseconds} сек
-Дата и время: {time_now:%Y.%m.%d  %H:%M}
-Временные рамки: {start_date:%Y}-{end_date:%Y} года
-{dates_and_answers_str}
-
-"""
-    with open("save_for_guess_weekday_game.txt", mode="a", encoding='utf-8') as file:
-        file.write(save_data)
-        print("Saved...")
-
-
-def count_correct_answers(dates_and_answers):
-    """Вычисляется количество правильных ответов"""
-    correct_answers = 0
-    for i in dates_and_answers:
-        if i.is_correct:
-            correct_answers += 1
-    return correct_answers
-
-
-def show_results(dates_and_answers, session_time_milliseconds, correct_answers,
-                 session_number, game_type):
-    print(f"\nСессия {session_number} по типу игры \"{game_type}\"")
-    print("Среднее время на попытку = ", session_time_milliseconds / len(dates_and_answers))
-    print(f"Правильных ответов: {correct_answers}/{len(dates_and_answers)}")
+def show_results(session):
+    print(f"\nСессия {session.session_number} по типу игры \"{session.game_type}\"")
+    print("Среднее время на попытку = ", f"{(session.time_milliseconds / len(session.dates)) / 1000:.2f}")
+    print(f"Правильных ответов: {session.correct_answers}/{len(session.dates)}")
     print()
-    for i in dates_and_answers:
+    for i in session.dates:
         print(i.date, i.weekday_str, end=" ")
         if i.is_correct:
             print("Правильно")
@@ -247,16 +241,27 @@ def show_results(dates_and_answers, session_time_milliseconds, correct_answers,
     print()
 
 
-def find_current_session_number(game_type):
-    # Создается файл, если файла нет
-    fle = Path("save_for_guess_weekday_game.txt")
-    fle.touch(exist_ok=True)
+def save_to_file(session):
+    """ Сохраняются данные в файл"""
+    single_attempt_average_time = session.time_milliseconds / session.total_answers
+    time_now = datetime.datetime.now()
+    dates_str = ''
+    for i in session.dates:
+        dates_str += str(i.date) + " " + str(i.weekday_str) + " " + str(i.is_correct) + "\n"
 
-    pattern = re.escape(f"{game_type}")
-    with open("save_for_guess_weekday_game.txt", mode="r", encoding='utf-8') as file:
-        file_content = file.read()
-    session_number = len(re.findall(pattern, file_content)) + 1
-    return session_number
+    save_data = f"""Тип игры: {session.game_type}
+Попытка №{session.session_number}
+Правильных ответов: {session.correct_answers}/{session.total_answers}
+Среднее время на одну дату: {single_attempt_average_time / 1000:.2f} сек
+Время суммарно: {session.time_milliseconds / 1000:.2f} сек
+Дата и время: {time_now:%Y.%m.%d  %H:%M}
+Временные рамки: {session.start_date:%Y}-{session.end_date:%Y} года
+{dates_str}
+
+"""
+    with open("save_for_guess_weekday_game.txt", mode="a", encoding='utf-8') as file:
+        file.write(save_data)
+        print("Saved...")
 
 
 def show_info(info_section=0):
@@ -294,15 +299,11 @@ def show_info(info_section=0):
 
 
 def main():
-    dates_and_answers, session_time_milliseconds, game_type = pick_a_game()
-    if game_type is None:
+    session = pick_a_game()
+    if session is None:
         return
-    correct_answers = count_correct_answers(dates_and_answers)
-    session_number = find_current_session_number(game_type)
-    save_to_file(dates_and_answers, session_time_milliseconds, session_number, correct_answers,
-                 game_type, start_date, end_date, mode=None)
-    show_results(dates_and_answers, session_time_milliseconds, correct_answers,
-                 session_number, game_type)
+    save_to_file(session)
+    show_results(session)
     main()
 
 
