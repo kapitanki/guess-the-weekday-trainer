@@ -8,7 +8,7 @@ from pathlib import Path
 from functools import cached_property
 
 
-VERSION = "1.2"
+VERSION = "1.4"
 
 games_types = {
     1: "Полная игра",
@@ -112,6 +112,7 @@ class SessionData:
                 correct_answers += 1
         return correct_answers
 
+
 def timer(func):
     """Декоратор, замеряет время выполнения функции."""
 
@@ -163,7 +164,7 @@ def full_game(questions=10):
 в ответе пользователь указывает на какой день недели приходится эта дата
     Возвращается кортеж с списком вопросов и ответов, длительность угадывания в секундах
     """
-    print(f"\nНачалась {games_types[1]}")
+    print(f"\nНачалась \"{games_types[1]}\"")
     dates_and_answers = []
     for i in range(questions):
         question = DateData()
@@ -275,7 +276,7 @@ def show_info(info_section=0):
         print(f"0 - {games_types[0]}")
     elif info_section == 1:
         print(f"V {VERSION}")
-        print("Это игра, в которой нужно угадать день недели по году, месяцу и числу")
+        print("Это игра, в которой нужно угадать день недели по году, месяцу и числу. Сгенерируются 10 дат.")
         print("Сгенерируются 10 дат")
         print("Ответы принимаются в цифровом виде, где:")
         print("1 - понедельник", "2 - вторник", "3 - среда", "4 - четверг", "5 - пятница",
@@ -295,6 +296,9 @@ def show_info(info_section=0):
         print("Некоторые годы и их базовые значения:", "0 - 0", "12 - 1", "24 - 2",
               "36 - 3", "48 - 4", "60 - 5", "72 - 6", "84 - 0", "96 - 1",
               "28 - 0", "56 - 0", sep="\n")
+        print()
+    elif info_section == 3:
+        print()
         print()
 
 

@@ -929,3 +929,41 @@
 1925-01-01 Thursday False
 
 
+Тип игры: Полная игра
+Попытка №13
+Правильных ответов: 0/10
+Среднее время на одну дату: 0.43 сек
+Время суммарно: 4.26 сек
+Дата и время: 2022.01.25  18:53
+Временные рамки: 1918-2099 года
+2093-06-08 Monday False
+2062-10-16 Monday False
+1950-05-03 Wednesday False
+2003-04-14 Monday False
+1962-08-17 Friday False
+2070-03-19 Wednesday False
+1988-01-12 Tuesday False
+2058-11-09 Saturday False
+2057-08-04 Saturday False
+2076-05-23 Saturday False
+
+
+Тип игры: Тренировка "Только года(1918-2099)"
+Попытка №7
+Правильных ответов: 0/10
+Среднее время на одну дату: 0.79 сек
+Время суммарно: 7.86 сек
+Дата и время: 2022.01.25  18:54
+Временные рамки: 1918-2099 года
+2066-03-14 Sunday False
+2051-03-14 Tuesday False
+1926-03-14 Sunday False
+2023-03-14 Tuesday False
+2004-03-14 Sunday False
+2029-03-14 Wednesday False
+2076-03-14 Saturday False
+2041-03-14 Thursday False
+2084-03-14 Tuesday False
+1929-03-14 Thursday False
+
+

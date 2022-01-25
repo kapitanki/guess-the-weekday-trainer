@@ -38,6 +38,7 @@ PARTIALLY FIXED: new bug ID8, fixed only for save file
 Severity: low
 Priority: low
 
+FIXED
 8. Среднее время ответа в "результатах" указывается с большим количеством цифр после запятой.
 Указывать 2 цифры после запятой
 Severity: low
