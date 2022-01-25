@@ -8,7 +8,7 @@ from pathlib import Path
 from functools import cached_property
 
 
-VERSION = "1.4"
+VERSION = "1.5"
 
 games_types = {
     1: "Полная игра",
@@ -148,7 +148,7 @@ def pick_a_game():
         show_info(3)
         return pick_a_game()
     elif pick == 0:
-        print("\nВ разработке\n")
+        statistics()
         return pick_a_game()
     elif pick == 99:
         return None
@@ -207,7 +207,7 @@ def month_game(questions=10):
 
 @timer
 def partial_years_game(questions=10):
-    print(f"Началась тренировка {games_types[4]}")
+    print(f"\nНачалась тренировка {games_types[4]}")
     try:
         weekdays_quantity = int(input("Сколько дней недели включать в тренировку(1-7)? "))
     except ValueError:
@@ -311,6 +311,20 @@ def show_info(info_section=0):
             weekday.clear()
         print()
 
+
+def statistics():
+    # Создается файл, если файла нет
+    fle = Path("save_for_guess_weekday_game.txt")
+    fle.touch(exist_ok=True)
+
+    pattern = re.compile("Время суммарно: ([0-9.]+?) сек")
+    with open("save_for_guess_weekday_game.txt", mode="r", encoding='utf-8') as file:
+        file_content = file.read()
+    result = pattern.findall(file_content)
+    total_time_seconds = int(sum([float(x) for x in result]))
+    result = datetime.timedelta(seconds=total_time_seconds)
+    print("\nВсего затрачено времени(чч:мм:сс): ", str(result), "\n")
+    return result
 
 
 def main():
