@@ -1,16 +1,15 @@
 """Тренер угадывания дней недели по сгенерированной дате"""
-VERSION = "1.2"
 
 import datetime
 import calendar
 import random
 import re
 from pathlib import Path
-from dataclasses import dataclass, field
 
+
+VERSION = "1.2"
 start_date = datetime.date(1918, 3, 1)
 end_date = datetime.date(2099, 12, 31)
-
 games_types = {
     1: "Полная игра",
     2: "Тренировка \"Только года(1918-2099)\"",
@@ -24,32 +23,36 @@ games_types = {
     99: "Выход",
 }
 
-class Date_data:
-    def __init__(self, start_time=datetime.datetime(1918,3,1),
-                 end_time=datetime.datetime(2099,12,31),
-                 century=True,
-                 year=True,
-                 month_and_date=True,
+
+class DateData:
+    def __init__(self, start_time=datetime.datetime(1918, 3, 1),
+                 end_time=datetime.datetime(2099, 12, 31),
+                 generate_century=True,
+                 generate_year=True,
+                 generate_month_and_date=True,
                  weekdays_quantity=7):
         self.start_time = start_time
         self.end_time = end_time
-        self.century = century
-        self.year = year
-        self.month_and_date = month_and_date
+        self.generate_century = generate_century
+        self.generate_year = generate_year
+        self.generate_month_and_date = generate_month_and_date
         self.weekdays_quantity = weekdays_quantity
+        self.is_correct = None
+        self._user_answer = None
 
         days_between_dates = (end_date - start_date).days
+
         def generate_date():
-            "Generate a date"
+            """Generate a date"""
             random_number_of_days = random.randrange(days_between_dates + 1)
             return start_date + datetime.timedelta(days=random_number_of_days)
-        
+
         # condition for generating only full year(century and year)
-        if self.century == True and self.year == True and self.month_and_date == False:
+        if self.generate_century == True and self.generate_year == True and self.generate_month_and_date == False:
             self.date = datetime.datetime(generate_date().year, 3, 14)
-            
-        #condition for genereting pure year(without century)
-        elif self.century == False and self.year == True and self.month_and_date == False:
+
+        # condition for genereting pure year(without century)
+        elif self.generate_century == False and self.generate_year == True and self.generate_month_and_date == False:
             # making sure we get a value that satisfies possible weekdays restriction
             while True:
                 self.date = datetime.datetime(generate_date().year % 100 + 2100, 3, 14)
@@ -60,11 +63,11 @@ class Date_data:
 
         self.weekday = self.date.isoweekday()
         self.weekday_str = self.date.strftime("%A")
-        
-        
+
     @property
     def user_answer(self):
         return self._user_answer
+
     @user_answer.setter
     def user_answer(self, answer):
         try:
@@ -74,21 +77,23 @@ class Date_data:
         if answer == 0:
             self._user_answer = 7
         if self.weekday == self._user_answer:
-            self.iscorrect = True
+            self.is_correct = True
         else:
-            self.iscorrect = False
-        
-    
+            self.is_correct = False
+
+
 def timer(func):
     """Декоратор, замеряет время выполнения функции."""
+
     def wrapper(*args, **kwargs):
         start_time = datetime.datetime.now()
         dates_and_answers = func(*args, **kwargs)
         end_time = datetime.datetime.now()
         wrapper.time_milliseconds = ((end_time - start_time)
                                      / datetime.timedelta(milliseconds=1))
-        return dates_and_answers    
-    return wrapper    
+        return dates_and_answers
+
+    return wrapper
 
 
 def pick_a_game():
@@ -117,8 +122,8 @@ def pick_a_game():
         return None, None, None
     game_type = games_types[pick]
     dates_and_answers = game()
-    print(dates_and_answers, game.time_milliseconds, game_type)
     return dates_and_answers, game.time_milliseconds, game_type
+
 
 @timer
 def full_game(questions=10):
@@ -131,7 +136,7 @@ def full_game(questions=10):
     print(f"\nНачалась {games_types[1]}")
     dates_and_answers = []
     for i in range(questions):
-        question = Date_data()
+        question = DateData()
         question.user_answer = input("{}: ".format(question.date.strftime("%Y.%m.%d")))
         dates_and_answers.append(question)
     return dates_and_answers
@@ -142,7 +147,7 @@ def year_game(questions=10):
     print(f"\nНачалась \"{games_types[2]}\"")
     dates_and_answers = []
     for i in range(questions):
-        question = Date_data(month_and_date=False)
+        question = DateData(generate_month_and_date=False)
         question.user_answer = input("{}: ".format(question.date.strftime("%Y")))
         dates_and_answers.append(question)
     return dates_and_answers
@@ -154,7 +159,7 @@ def month_game(questions=10):
     print(f"\nНачалась \"{games_types[3]}\"")
     dates_and_answers = []
     for i in range(questions):
-        question = Date_data()
+        question = DateData()
         if calendar.isleap(question.date.year):
             leap_year = "B"
         else:
@@ -166,7 +171,7 @@ def month_game(questions=10):
             question.date.strftime("%m.%d"), year_code, leap_year))
         dates_and_answers.append(question)
     return dates_and_answers
-        
+
 
 @timer
 def partial_years_game(questions=10):
@@ -184,7 +189,7 @@ def partial_years_game(questions=10):
 
     dates_and_answers = []
     for i in range(questions):
-        question = Date_data(century=False, month_and_date=False, weekdays_quantity=weekdays_quantity+1)
+        question = DateData(generate_century=False, generate_month_and_date=False, weekdays_quantity=weekdays_quantity + 1)
         question.user_answer = input("{} : ".format(question.date.strftime("%Y")))
         if question.user_answer is None or question.user_answer > weekdays_quantity:
             question.user_answer = weekdays_quantity + 1
@@ -201,7 +206,7 @@ def save_to_file(dates_and_answers, session_time_milliseconds, session_number, c
     time_now = datetime.datetime.now()
     dates_and_answers_str = ''
     for i in dates_and_answers:
-        dates_and_answers_str += str(i.date) + " " + str(i.weekday_str) + " " + str(i.iscorrect) + "\n"
+        dates_and_answers_str += str(i.date) + " " + str(i.weekday_str) + " " + str(i.is_correct) + "\n"
 
     save_data = f"""Тип игры: {game_type}
 Попытка №{session_number}
@@ -222,7 +227,7 @@ def count_correct_answers(dates_and_answers):
     """Вычисляется количество правильных ответов"""
     correct_answers = 0
     for i in dates_and_answers:
-        if i.iscorrect:
+        if i.is_correct:
             correct_answers += 1
     return correct_answers
 
@@ -235,7 +240,7 @@ def show_results(dates_and_answers, session_time_milliseconds, correct_answers,
     print()
     for i in dates_and_answers:
         print(i.date, i.weekday_str, end=" ")
-        if i.iscorrect:
+        if i.is_correct:
             print("Правильно")
         else:
             print("Ошибка!")
@@ -270,7 +275,7 @@ def show_info(info_section=0):
         print("Ответы принимаются в цифровом виде, где:")
         print("1 - понедельник", "2 - вторник", "3 - среда", "4 - четверг", "5 - пятница",
               "6 - суббота", "7(0) - воскресенье", sep="\n")
-        print("Cтатистика автоматически сохраняется в файл \"save_for_date_game.txt\"")
+        print("Статистика автоматически сохраняется в файл \"save_for_date_game.txt\"")
         print()
     elif info_section == 2:
         print()
@@ -299,6 +304,7 @@ def main():
     show_results(dates_and_answers, session_time_milliseconds, correct_answers,
                  session_number, game_type)
     main()
+
 
 show_info(1)
 main()
